@@ -142,3 +142,20 @@
     color: var(--color-foreground);
   }
 }
+
+:root {
+  --gradient-hero: radial-gradient(ellipse at 30% 35%, oklch(0.72 0.03 265) 0%, oklch(0.66 0.035 262) 25%, oklch(0.45 0.04 268) 60%, oklch(0.25 0.04 275) 100%);
+  --glass: oklch(1 0 0 / 0.08);
+  --glass-border: oklch(1 0 0 / 0.18);
+  --ink: oklch(0.97 0.005 260);
+  --ink-soft: oklch(0.88 0.015 260);
+}
+@theme inline {
+  --color-glass: var(--glass);
+  --color-glass-border: var(--glass-border);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --font-display: "Space Grotesk", sans-serif;
+  --font-sans: "DM Sans", sans-serif;
+}
+@utility bg-hero { background: var(--gradient-hero); background-attachment: fixed; }
