@@ -27,6 +27,19 @@ async function rateLimited(action: string): Promise<boolean> {
   return false;
 }
 
+async function fetchAvatar(robloxId: number): Promise<{ avatarUrl: string | null; avatarState: string | null }> {
+  try {
+    const res = await fetch(
+      `https://thumbnails.roblox.com/v1/users/avatar?userIds=${robloxId}&size=420x420&format=Png&isCircular=false`,
+    );
+    if (!res.ok) return { avatarUrl: null, avatarState: null };
+    const item = (await res.json()).data?.[0];
+    return { avatarUrl: item?.imageUrl || null, avatarState: item?.state ?? null };
+  } catch {
+    return { avatarUrl: null, avatarState: null };
+  }
+}
+
 function makeCode() {
   const bytes = new Uint8Array(3);
   crypto.getRandomValues(bytes);
@@ -63,7 +76,7 @@ export const startVerification = createServerFn({ method: "POST" })
 
 export const checkVerification = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ sessionToken: z.string().uuid() }).parse(d))
-  .handler(async ({ data }): Promise<Result<{ username: string; robloxId: number; sessionToken: string }>> => {
+  .handler(async ({ data }): Promise<Result<{ username: string; robloxId: number; sessionToken: string; avatarUrl: string | null; avatarState: string | null }>> => {
     if (await rateLimited("check")) return { ok: false, error: "Too many attempts. Wait a minute and try again." };
     const db = await admin();
     const { data: row } = await db
@@ -84,7 +97,8 @@ export const checkVerification = createServerFn({ method: "POST" })
       .from("verification_codes").update({ verified: true })
       .eq("session_token", data.sessionToken).eq("verified", false).select("session_token");
     if (!updated?.length) return { ok: false, error: "Code expired or not found. Generate a new one." };
-    return { ok: true, username: row.username ?? "", robloxId: Number(row.roblox_id), sessionToken: data.sessionToken };
+    const avatar = await fetchAvatar(Number(row.roblox_id));
+    return { ok: true, username: row.username ?? "", robloxId: Number(row.roblox_id), sessionToken: data.sessionToken, ...avatar };
   });
 
 export const getRobloxSession = createServerFn({ method: "POST" })
@@ -94,5 +108,7 @@ export const getRobloxSession = createServerFn({ method: "POST" })
     const { data: row } = await db
       .from("verification_codes").select("roblox_id, username")
       .eq("session_token", data.sessionToken).eq("verified", true).maybeSingle();
-    return { robloxId: row?.roblox_id ? Number(row.roblox_id) : null, username: row?.username ?? null };
+    if (!row?.roblox_id) return { robloxId: null, username: null, avatarUrl: null, avatarState: null };
+    const avatar = await fetchAvatar(Number(row.roblox_id));
+    return { robloxId: Number(row.roblox_id), username: row.username ?? null, ...avatar };
   });
