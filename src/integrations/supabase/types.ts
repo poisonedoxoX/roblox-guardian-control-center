@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      verification_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          expires_at: string
+          roblox_id: number | null
+          session_token: string
+          username: string | null
+          verified: boolean
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          expires_at: string
+          roblox_id?: number | null
+          session_token?: string
+          username?: string | null
+          verified?: boolean
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          roblox_id?: number | null
+          session_token?: string
+          username?: string | null
+          verified?: boolean
+        }
+        Relationships: []
+      }
+      verify_rate_limits: {
+        Row: {
+          action: string
+          created_at: string
+          id: number
+          ip: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: number
+          ip: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: number
+          ip?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
