@@ -20,6 +20,22 @@ export const Route = createFileRoute("/login")({
 
 const KEY = "roblox_session";
 
+type SignedIn = { username: string; avatarUrl: string | null; avatarState: string | null };
+
+function Avatar({ url, state, username }: { url: string | null; state: string | null; username: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [url]);
+  const show = url && state !== "Pending" && !failed;
+  return show ? (
+    <img src={url} alt={`${username}'s Roblox avatar`} onError={() => setFailed(true)}
+      className="h-32 w-32 shrink-0 rounded-full border border-glass-border bg-glass object-cover" />
+  ) : (
+    <div aria-label="Loading avatar" className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full border border-glass-border bg-glass">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-ink/30 border-t-ink" />
+    </div>
+  );
+}
+
 function Login() {
   const start = useServerFn(startVerification);
   const check = useServerFn(checkVerification);
@@ -27,7 +43,7 @@ function Login() {
 
   const [username, setUsername] = useState("");
   const [pending, setPending] = useState<{ code: string; sessionToken: string; username: string; robloxId: number } | null>(null);
-  const [signedIn, setSignedIn] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState<SignedIn | null>(null);
   const [loading, setLoading] = useState<"start" | "check" | "me" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -37,10 +53,25 @@ function Login() {
     if (!token) return;
     setLoading("me");
     me({ data: { sessionToken: token } })
-      .then((r) => (r.username ? setSignedIn(r.username) : localStorage.removeItem(KEY)))
+      .then((r) => (r.username ? setSignedIn({ username: r.username, avatarUrl: r.avatarUrl, avatarState: r.avatarState }) : localStorage.removeItem(KEY)))
       .catch(() => {})
       .finally(() => setLoading(null));
   }, [me]);
+
+  // Retry once after 3s if the avatar render isn't ready yet.
+  const needsRetry = !!signedIn && (!signedIn.avatarUrl || signedIn.avatarState === "Pending");
+  useEffect(() => {
+    if (!needsRetry) return;
+    const token = localStorage.getItem(KEY);
+    if (!token) return;
+    const t = setTimeout(() => {
+      me({ data: { sessionToken: token } })
+        .then((r) => r.username && setSignedIn({ username: r.username, avatarUrl: r.avatarUrl, avatarState: r.avatarState }))
+        .catch(() => {});
+    }, 3000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsRetry]);
 
   async function onGenerate(e: React.FormEvent) {
     e.preventDefault();
@@ -66,7 +97,7 @@ function Login() {
       const r = await check({ data: { sessionToken: pending.sessionToken } });
       if (r.ok) {
         localStorage.setItem(KEY, r.sessionToken);
-        setSignedIn(r.username);
+        setSignedIn({ username: r.username, avatarUrl: r.avatarUrl, avatarState: r.avatarState });
         setPending(null);
       } else setError(r.error);
     } catch {
@@ -91,7 +122,10 @@ function Login() {
             <p className="text-ink-soft">Checking your session…</p>
           ) : signedIn ? (
             <>
-              <h1 className="font-display text-3xl font-bold">Signed in as {signedIn}</h1>
+              <div className="flex items-center justify-center gap-5 text-left">
+                <Avatar url={signedIn.avatarUrl} state={signedIn.avatarState} username={signedIn.username} />
+                <h1 className="font-display text-2xl font-bold">Signed in as {signedIn.username}</h1>
+              </div>
               <Link to="/dashboard" className="mt-8 block rounded-full bg-ink px-6 py-3 font-medium text-primary">
                 Go to dashboard
               </Link>
