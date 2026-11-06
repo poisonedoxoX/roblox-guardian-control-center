@@ -54,7 +54,15 @@ function Login() {
     if (!token) return;
     setLoading("me");
     me({ data: { sessionToken: token } })
-      .then((r) => (r.username ? setSignedIn({ username: r.username, avatarUrl: r.avatarUrl, avatarState: r.avatarState }) : localStorage.removeItem(KEY)))
+      .then((r) => {
+        if (r.username) {
+          const s = { username: r.username, avatarUrl: r.avatarUrl, avatarState: r.avatarState };
+          setSignedIn(s);
+          setRobloxSession(s);
+        } else {
+          clearRobloxSession();
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(null));
   }, [me]);
