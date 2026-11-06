@@ -1,6 +1,34 @@
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, User } from "lucide-react";
+import { useRobloxSession } from "@/lib/roblox-session";
+
+function HeaderAvatar() {
+  const { session, loading } = useRobloxSession();
+  if (loading || !session) {
+    return (
+      <Link to="/login" className="rounded-full border border-glass-border bg-glass px-4 py-2 text-ink backdrop-blur hover:bg-glass-border">
+        Sign in
+      </Link>
+    );
+  }
+  return (
+    <Link
+      to="/dashboard"
+      aria-label={`${session.username}'s dashboard`}
+      title={session.username}
+      className="block h-9 w-9 overflow-hidden rounded-full border border-glass-border bg-glass backdrop-blur hover:border-ink"
+    >
+      {session.avatarUrl ? (
+        <img src={session.avatarUrl} alt={`${session.username}'s Roblox avatar`} className="h-full w-full object-cover" />
+      ) : (
+        <span className="flex h-full w-full items-center justify-center">
+          <User className="h-4 w-4 text-ink" />
+        </span>
+      )}
+    </Link>
+  );
+}
 
 export function SiteShell({ children }: { children: ReactNode }) {
   return (
@@ -11,9 +39,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
         </Link>
         <nav className="flex items-center gap-6 text-sm text-ink-soft">
           <Link to="/pricing" className="hover:text-ink">Pricing</Link>
-          <Link to="/login" className="rounded-full border border-glass-border bg-glass px-4 py-2 text-ink backdrop-blur hover:bg-glass-border">
-            Sign in
-          </Link>
+          <HeaderAvatar />
         </nav>
       </header>
       {children}

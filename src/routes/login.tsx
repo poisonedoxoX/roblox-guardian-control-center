@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { SiteShell, Glass } from "@/components/SiteShell";
 import { startVerification, checkVerification, getRobloxSession } from "@/lib/roblox-verify.functions";
+import { setRobloxSession, clearRobloxSession } from "@/lib/roblox-session";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -53,7 +54,15 @@ function Login() {
     if (!token) return;
     setLoading("me");
     me({ data: { sessionToken: token } })
-      .then((r) => (r.username ? setSignedIn({ username: r.username, avatarUrl: r.avatarUrl, avatarState: r.avatarState }) : localStorage.removeItem(KEY)))
+      .then((r) => {
+        if (r.username) {
+          const s = { username: r.username, avatarUrl: r.avatarUrl, avatarState: r.avatarState };
+          setSignedIn(s);
+          setRobloxSession(s);
+        } else {
+          clearRobloxSession();
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(null));
   }, [me]);
@@ -97,7 +106,9 @@ function Login() {
       const r = await check({ data: { sessionToken: pending.sessionToken } });
       if (r.ok) {
         localStorage.setItem(KEY, r.sessionToken);
-        setSignedIn({ username: r.username, avatarUrl: r.avatarUrl, avatarState: r.avatarState });
+        const s = { username: r.username, avatarUrl: r.avatarUrl, avatarState: r.avatarState };
+        setSignedIn(s);
+        setRobloxSession(s);
         setPending(null);
       } else setError(r.error);
     } catch {
@@ -108,7 +119,7 @@ function Login() {
   }
 
   function signOut() {
-    localStorage.removeItem(KEY);
+    clearRobloxSession();
     setSignedIn(null);
     setPending(null);
     setUsername("");
