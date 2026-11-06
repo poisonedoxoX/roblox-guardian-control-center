@@ -98,7 +98,9 @@ function Login() {
       const r = await check({ data: { sessionToken: pending.sessionToken } });
       if (r.ok) {
         localStorage.setItem(KEY, r.sessionToken);
-        setSignedIn({ username: r.username, avatarUrl: r.avatarUrl, avatarState: r.avatarState });
+        const s = { username: r.username, avatarUrl: r.avatarUrl, avatarState: r.avatarState };
+        setSignedIn(s);
+        setRobloxSession(s);
         setPending(null);
       } else setError(r.error);
     } catch {
@@ -109,7 +111,7 @@ function Login() {
   }
 
   function signOut() {
-    localStorage.removeItem(KEY);
+    clearRobloxSession();
     setSignedIn(null);
     setPending(null);
     setUsername("");
