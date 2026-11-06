@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { SiteShell, Glass } from "@/components/SiteShell";
 import { startVerification, checkVerification, getRobloxSession } from "@/lib/roblox-verify.functions";
+import { setRobloxSession, clearRobloxSession } from "@/lib/roblox-session";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
